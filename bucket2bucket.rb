@@ -1,4 +1,4 @@
-require "aws-sdk"
+require "aws-sdk-v1"
 require "optparse"
 require "thread"
 
@@ -74,25 +74,30 @@ log.info "Start."
 log.debug options
 start_at = Time.now
 
-# require "pry"
-# require "awesome_print"
-# binding.pry
+require "pry"
+#require "awesome_print"
 
 each_in_threads options[:threads], src_bucket.objects do |src_object|
   begin
+
     src_key  = src_object.key
     dest_key = options[:dest_prefix] + src_key
 
     next unless src_key.start_with? options[:src_prefix]
 
-    dest_object = src_object.copy_to dest_bucket.objects[dest_key], server_side_encryption: src_object.server_side_encryption
-    dest_object.acl = src_object.acl
-    log.info "Copied: #{src_bucket.name}:#{src_key} => #{dest_bucket.name}:#{dest_key}"
+    dest_object = src_object.copy_to dest_bucket.objects[dest_key],
+      server_side_encryption: src_object.server_side_encryption,
+      acl: :public_read
+    #dest_object.acl = src_object.acl
+
+    #log.info "Copied: #{src_bucket.name}:#{src_key} => #{dest_bucket.name}:#{dest_key}"
+    log.info "Copied: #{src_bucket.name}:#{src_key}"
 
     next unless options[:verify]
 
     if src_object.etag == dest_object.etag
-      log.info "Verified: #{src_bucket.name}:#{src_key} <=> #{dest_bucket.name}:#{dest_key}"
+      #log.info "Verified: #{src_bucket.name}:#{src_key} <=> #{dest_bucket.name}:#{dest_key}"
+      log.info "Verified: #{src_bucket.name}:#{src_key}"
     else
       log.warn "Verify failed: #{src_bucket.name}:#{src_key} <=> #{dest_bucket.name}:#{dest_key}"
     end
